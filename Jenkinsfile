@@ -1,11 +1,6 @@
 pipeline {
     agent any
     
-    tools {
-        maven 'Maven-3.9.0' // Jenkins에서 설정된 Maven 버전
-        jdk 'JDK-17' // Jenkins에서 설정된 JDK 버전
-    }
-    
     environment {
         MAVEN_OPTS = '-Dmaven.test.failure.ignore=true'
     }
