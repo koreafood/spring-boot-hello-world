@@ -17,6 +17,8 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building the application...'
+                // Maven Wrapper에 실행 권한 부여
+                sh 'chmod +x mvnw'
                 sh './mvnw clean compile || mvn clean compile'
             }
         }
