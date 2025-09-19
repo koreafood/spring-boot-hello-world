@@ -1,13 +1,9 @@
 pipeline {
-    agent {
-        docker {
-            image 'maven:3.9.0-openjdk-17'
-            args '-v /root/.m2:/root/.m2'
-        }
-    }
+    agent any
     
     environment {
         MAVEN_OPTS = '-Dmaven.test.failure.ignore=true'
+        JAVA_HOME = '/usr/lib/jvm/java-17-openjdk'
     }
     
     stages {
@@ -21,19 +17,23 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building the application...'
-                sh 'mvn clean compile'
+                sh './mvnw clean compile || mvn clean compile'
             }
         }
         
         stage('Test') {
             steps {
                 echo 'Running tests...'
-                sh 'mvn test'
+                sh './mvnw test || mvn test'
             }
             post {
                 always {
-                    // 테스트 결과 발행
-                    publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
+                    // 테스트 결과 발행 (테스트 파일이 있는 경우에만)
+                    script {
+                        if (fileExists('target/surefire-reports/*.xml')) {
+                            publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
+                        }
+                    }
                     // 테스트 커버리지 보고서 (JaCoCo 사용시)
                     // publishCoverage adapters: [jacocoAdapter('target/site/jacoco/jacoco.xml')]
                 }
@@ -43,7 +43,7 @@ pipeline {
         stage('Package') {
             steps {
                 echo 'Packaging the application...'
-                sh 'mvn package -DskipTests'
+                sh './mvnw package -DskipTests || mvn package -DskipTests'
             }
             post {
                 success {
@@ -58,12 +58,12 @@ pipeline {
                 echo 'Running code quality analysis...'
                 // SonarQube 분석 (SonarQube 서버가 설정된 경우)
                 // withSonarQubeEnv('SonarQube') {
-                //     sh 'mvn sonar:sonar'
+                //     sh './mvnw sonar:sonar || mvn sonar:sonar'
                 // }
                 
                 // 간단한 정적 분석
-                sh 'mvn checkstyle:check || true'
-                sh 'mvn pmd:check || true'
+                sh './mvnw checkstyle:check || mvn checkstyle:check || true'
+                sh './mvnw pmd:check || mvn pmd:check || true'
             }
         }
         
@@ -113,8 +113,8 @@ pipeline {
     post {
         always {
             echo 'Pipeline completed.'
-            // 워크스페이스 정리
-            cleanWs()
+            // 워크스페이스 정리 (CasaOS Jenkins에서 문제가 있을 수 있으므로 주석 처리)
+            // cleanWs()
         }
         success {
             echo 'Pipeline succeeded!'
